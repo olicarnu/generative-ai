@@ -76,90 +76,82 @@ def get_gemini_pro_vision_response(
     return "".join(final_response)
 
 
-st.header("Vertex AI Gemini 1.0 API", divider="rainbow")
+col1,col2=st.columns([1,3], vertical_alignment="center")
+
+with col1:
+    st.image('/home/student_03_2835f102eb2f/generative-ai/gemini/sample-apps/gemini-streamlit-cloudrun/images/logo_youtube_creativity.png', 
+	width=100)
+	
+with col2:
+	st.header("YouTube Magic Creativity")
+
+st.divider()
+#st.header("", divider="red")
+st.html( ''' <style> hr { border-color: red; } </style> ''' )
+
+
 text_model_pro, multimodal_model_pro = load_models()
 
 tab1, tab2, tab3, tab4 = st.tabs(
-    ["Generate story", "Marketing campaign", "Image Playground", "Video Playground"]
+    ["Generate video ideas", "Generate thumbnails", "Image Playground", "Video Playground"]
 )
 
 with tab1:
-    st.write("Using Gemini 1.0 Pro - Text only model")
-    st.subheader("Generate a story")
+    st.write("Using Gemini 1.0 Pro - Text only model to enhance your creatity in YouTube")
+    st.subheader("Generate video ideas")
 
     # Story premise
-    character_name = st.text_input(
-        "Enter character name: \n\n", key="character_name", value="Mittens"
+    channel_name = st.text_input(
+        "Enter a YouTube channel name: \n\n", key="character_name", value="YouTube Creators"
     )
-    character_type = st.text_input(
-        "What type of character is it? \n\n", key="character_type", value="Cat"
+    channel_explore = st.multiselect(
+            "What is your content about? (can select multiple) \n\n",
+            [
+                "Music",
+                "Movies",
+                "Gaming",
+                "News",
+                "Sports",
+                "Learning",
+                "Podcasts",
+            ],
+            key="channel_explore",
+            default=["Learning"],
+        )
+    content_type = st.text_input(
+        "What type of content do you want to produce? \n\n", key="content_type", value="best practices and tips to help grow YouTube audiences"
     )
-    character_persona = st.text_input(
-        "What personality does the character have? \n\n",
-        key="character_persona",
-        value="Mitten is a very friendly cat.",
-    )
-    character_location = st.text_input(
-        "Where does the character live? \n\n",
-        key="character_location",
-        value="Andromeda Galaxy",
-    )
-    story_premise = st.multiselect(
-        "What is the story premise? (can select multiple) \n\n",
-        [
-            "Love",
-            "Adventure",
-            "Mystery",
-            "Horror",
-            "Comedy",
-            "Sci-Fi",
-            "Fantasy",
-            "Thriller",
-        ],
-        key="story_premise",
-        default=["Love", "Adventure"],
-    )
-    creative_control = st.radio(
-        "Select the creativity level: \n\n",
-        ["Low", "High"],
-        key="creative_control",
-        horizontal=True,
-    )
-    length_of_story = st.radio(
-        "Select the length of the story: \n\n",
-        ["Short", "Long"],
-        key="length_of_story",
+
+    content_format = st.radio(
+        "Select the conytent format: \n\n",
+        ["Short", "Video", "Live", "Podcast"],
+        key="content_format",
         horizontal=True,
     )
 
-    if creative_control == "Low":
-        temperature = 0.30
+    if content_format == "Short":
+        description = "don't"
     else:
-        temperature = 0.95
+        description = "do"
 
-    max_output_tokens = 2048
+    prompt = f"""I am a creator of {channel_explore} content on YouTube. My YouTube channel is {channel_name}. Create a YouTube {content_format} plan that includes 10 videos about {content_type}. Use table format.
 
-    prompt = f"""Write a {length_of_story} story based on the following premise: \n
-    character_name: {character_name} \n
-    character_type: {character_type} \n
-    character_persona: {character_persona} \n
-    character_location: {character_location} \n
-    story_premise: {",".join(story_premise)} \n
-    If the story is "short", then make sure to have 5 chapters or else if it is "long" then 10 chapters.
-    Important point is that each chapters should be generated based on the premise given above.
-    First start by giving the book introduction, chapter introductions and then each chapter. It should also have a proper ending.
-    The book should have prologue and epilogue.
+    1. Make sure each "Video Title" has a strong hook, which will allow the video to go viral. Feel free to keep titles short, include numbers and emojis. As this is a Short video, we {description} need a video "Description" in another column. 
+    2. Include another column calls "Start Hint" suggesting a hook, to start the first seconds of the video. Make sure it captures the attention of my audience.
+    3. Also add a column with a powerful but short "Call to Action". 
+    4. Also add a column with tips on "How to Produce and Edit" this video, and tell me which YouTube tools the creator can use.
+    5. Consider what's the channel {channel_name} about always.
     """
     config = {
         "temperature": 0.8,
         "max_output_tokens": 2048,
     }
 
-    generate_t2t = st.button("Generate my story", key="generate_t2t")
+    generate_t2t = st.button("Generate video ideas", key="generate_t2t")
     if generate_t2t and prompt:
         # st.write(prompt)
-        with st.spinner("Generating your story using Gemini 1.0 Pro ..."):
-            first_tab1, first_tab2 = st.tabs(["Story", "Prompt"])
+        with st.spinner("Generating ideas using Gemini 1.0 Pro..."):
+            first_tab1, first_tab2 = st.tabs(["Ideas", "Prompt"])
             with first_tab1:
                 response = get_gemini_pro_text_response(
                     text_model_pro,
@@ -167,7 +159,7 @@ with tab1:
                     generation_config=config,
                 )
                 if response:
-                    st.write("Your story:")
+                    st.write("Your new ideas:")
                     st.write(response)
             with first_tab2:
                 st.text(prompt)
@@ -175,6 +167,33 @@ with tab1:
 with tab2:
     st.write("Using Gemini 1.0 Pro - Text only model")
     st.subheader("Generate your marketing campaign")
+
+    import streamlit as st
+    from PIL import Image
+    from io import BytesIO
+    from vertexai.preview.vision_models import ImageGenerationModel
+
+    generation_model = ImageGenerationModel.from_pretrained("imagegeneration@006")
+
+    prompt = "Una princesa de hielo con pelo plateado, concepto fantasia y estilo artistico"
+
+    response = generation_model.generate_images(
+        prompt=prompt,
+    )
+    # Retrieve the first image from the response
+    generated_image = response.images[0]
+
+    # Debugging: Print out the attributes of the generated_image object
+    st.write(dir(generated_image))
+
+    # Assuming that the generated image object contains a method to get the image bytes
+    image_bytes = generated_image.image_bytes  # Adjust this line based on the actual attribute/method
+
+    # Display the image in the Streamlit app
+    st.image(image_bytes, caption="Generated Image", use_column_width=True)
+
+
+
 
     product_name = st.text_input(
         "What is the name of the product? \n\n", key="product_name", value="ZomZoo"
